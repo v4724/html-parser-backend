@@ -22,29 +22,36 @@ app.get('/scrape', async (req, res) => {
     // 如果只想抓取特定的區塊（例如 class="content" 的區塊）
     const bookTitle = $('.product-detail-desc-title').text().trim();
     const previewImg = $('.product-detail-image-main > a > img ').attr('src');
-    let status = '', statusDes = '';
     const reserve = $('.product-detail-label-item.mk-reserve').html();
     const stockSufficient = $('.stock_sufficient').html();
     const stockLittle = $('.stock_little').html();
     const outOfStock = $('.out_of_stock').html();
+      
+    let status = '', stock = '', statusDes = '';
     if (outOfStock) {
-        status = '4';
+        status = '0';
+        stock = '0';
         statusDes = 'out_of_stock';
     } else {
         if (reserve && stockSufficient) {
             status = '1';
+            stock = '1';
             statusDes = 'reserve stock_sufficient';
         }else if (reserve && stockLittle) {
-            status = '2';
+            status = '1';
+            stock = '2';
             statusDes = 'reserve stock_little';
         }else if (!reserve && stockSufficient) {
-            status = '3';
+            status = '2';
+            stock = '1';
             statusDes = '!reserve stock_sufficient';
         }else if (!reserve && stockLittle) {
-            status = '4';
+            status = '2';
+            stock = '2';
             statusDes = '!reserve stock_little';
         }
-    }
+      }
+      
     let bookTypeAndSize;
     $('.product-detail-spec-table tr').each((i, el) => {
     
@@ -70,6 +77,22 @@ app.get('/scrape', async (req, res) => {
     const bookSize = tmpArr[0];
     const bookPages = tmpArr[1];
     const price = $('.pricearea__price.pricearea__price--normal').html().split('円')[0].replaceAll(',', '');
+    
+    const shippingSchedule = [];
+        $('#shippingScheduleDateArea>div').each((i, el) => { 
+        let type = '', shippingDate = '';
+        $(el).find('div').each((j, div) => { 
+            if (j === 0) {
+                type = i===0 ? '每度便' : $(div).text().trim();
+            } else if (j === 1) {
+                shippingDate = $(div).text().trim();
+                shippingDate = shippingDate.substring(0, shippingDate.length - 2);
+            }
+        })
+            shippingSchedule.push({
+                type, shippingDate
+            })
+    })
       
     res.json({
       url,
@@ -78,10 +101,12 @@ app.get('/scrape', async (req, res) => {
         bookTitle,
         previewImg,
         status,
+        stock,
         statusDes,
         bookSize,
         bookPages,
-        price
+        price,
+        shippingSchedule
         
     });
   } catch (error) {
