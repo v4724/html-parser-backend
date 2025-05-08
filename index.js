@@ -6,13 +6,21 @@ import cors from 'cors';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+function randomDelay(min = 2000, max = 5000) {
+  const delayMs = Math.floor(Math.random() * (max - min + 1)) + min;
+  return new Promise(resolve => setTimeout(resolve, delayMs));
+}
+
 app.use(cors());
 
 app.get('/scrape', async (req, res) => {
   const url = req.query.url;
   if (!url) return res.status(400).json({ error: 'Missing ?url parameter' });
 
-  try {
+    try {
+    // 延遲前一段時間以節流
+    await randomDelay();
+        
     const response = await axios.get(url);
     const $ = cheerio.load(response.data);
 
